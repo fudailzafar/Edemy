@@ -19,8 +19,81 @@ const AddCourse = () => {
     lectureTitle: "",
     lectureDuration: "",
     lectureUrl: "",
-    isPreview: false,
+    isPreviewFree: false,
   });
+
+  const handleChapter = (action, chapterId) => {
+    if (action === "add") {
+      const title = prompt("Enter Chapter Name:");
+      if (title) {
+        const newChapter = {
+          chapterId: uniqid(),
+          chapterTitle: title,
+          chapterContent: [],
+          collapsed: false,
+          chapterOrder:
+            chapters.length > 0 ? chapters.slice(-1)[0].chapterOrder + 1 : 1,
+        };
+        setChapers([...chapters, newChapter]);
+      }
+    } else if (action === "remove") {
+      setChapers(chapters.filter((chapter) => chapter.chapterId !== chapterId));
+    } else if (action === "toggle") {
+      setChapers(
+        chapters.map((chapter) =>
+          chapter.chapterId === chapterId
+            ? { ...chapter, collapsed: !chapter.collapsed }
+            : chapter
+        )
+      );
+    }
+  };
+
+  const handleLecture = (action, chapterId, lectureIndex) => {
+    if (action === "add") {
+      setCurrentChapterId(chapterId);
+      setShowPopup(true);
+    } else if (action === "remove") {
+      setChapers(
+        chapters.map((chapter) => {
+          if (chapter.chapterId === chapterId) {
+            chapter.chapterContent.splice(lectureIndex, 1);
+          }
+          return chapter;
+        })
+      );
+    }
+  };
+
+  const addLecture = () => {
+    setChapers(
+      chapters.map((chapter) => {
+        if (chapter.chapterId === currentChapterId) {
+          const newLecture = {
+            ...lectureDetails,
+            lectureOrder:
+              chapter.chapterContent.length > 0
+                ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1
+                : 1,
+            lectureId: uniqid(),
+          };
+          chapter.chapterContent.push(newLecture);
+        }
+        return chapter;
+      })
+    );
+    setShowPopup(false);
+    setLectureDetails({
+      lectureTitle: "",
+      lectureDuration: "",
+      lectureUrl: "",
+      isPreviewFree: false,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  };
 
   useEffect(() => {
     // Initiate Quill only once
@@ -32,7 +105,10 @@ const AddCourse = () => {
   }, []);
   return (
     <div className="h-screen overflow-scroll flex flex-col items-start justify-between md:px-8 md:pb-0 p-4 pt-8 pb-0">
-      <form className="flex flex-col gap-4 max-w-md w-full text-gray-500">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 max-w-md w-full text-gray-500"
+      >
         <div className="flex flex-col gap-1">
           <p>Course Title</p>
           <input
@@ -109,6 +185,7 @@ const AddCourse = () => {
                     className={`mr-2 cursor-pointer transition-all ${
                       chapter.collapsed && "-rotate-90"
                     }`}
+                    onClick={() => handleChapter("toggle", chapter.chapterId)}
                   />
                   <span className="font-semibold">
                     {chapterIndex + 1} {chapter.chapterTitle}
@@ -121,6 +198,7 @@ const AddCourse = () => {
                   src={assets.cross_icon}
                   alt=""
                   className="cursor-pointer"
+                  onClick={() => handleChapter("remove", chapter.chapterId)}
                 />
               </div>
               {!chapter.collapsed && (
@@ -146,17 +224,30 @@ const AddCourse = () => {
                         src={assets.cross_icon}
                         alt=""
                         className="cursor-pointer"
+                        onClick={() =>
+                          handleLecture(
+                            "remove",
+                            chapter.chapterId,
+                            lectureIndex
+                          )
+                        }
                       />
                     </div>
                   ))}
-                  <div className="inline-flex bg-gray-100 p-2 rounded cursor-pointer mt-2">
+                  <div
+                    className="inline-flex bg-gray-100 p-2 rounded cursor-pointer mt-2"
+                    onClick={() => handleLecture("add", chapter.chapterId)}
+                  >
                     + Add Lecture
                   </div>
                 </div>
               )}
             </div>
           ))}
-          <div className="flex justify-center items-center bg-blue-100 p-2 rounded-lg cursor-pointer">
+          <div
+            className="flex justify-center items-center bg-blue-100 p-2 rounded-lg cursor-pointer"
+            onClick={() => handleChapter("add")}
+          >
             + Add Chapter
           </div>
 
@@ -223,6 +314,7 @@ const AddCourse = () => {
                   />
                 </div>
                 <button
+                  onClick={addLecture}
                   type="button"
                   className="w-full bg-blue-400 text-white px-3 py-2 rounded"
                 >
